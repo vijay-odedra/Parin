@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parin Beverage - Khari Soda</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary-green: #1a5d1a;
+            --secondary-green: #2e7d32;
+            --light-green: #4caf50;
+            --lighter-green: #81c784;
+            --lightest-green: #e8f5e9;
+            --background-green: #f0f7f0;
+            --text-dark: #333;
+            --text-light: #fff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--background-green);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background Bubbles */
+        body:before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(129, 199, 132, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 30%, rgba(76, 175, 80, 0.08) 0%, transparent 20%),
+                radial-gradient(circle at 50% 80%, rgba(129, 199, 132, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 20% 70%, rgba(76, 175, 80, 0.06) 0%, transparent 20%),
+                radial-gradient(circle at 80% 50%, rgba(129, 199, 132, 0.07) 0%, transparent 20%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Animated Bubbles */
+        .bubble {
+            position: fixed;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            animation: floatBubble 20s infinite linear;
+        }
+
+        @keyframes floatBubble {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0.5;
+            }
+            25% {
+                transform: translateY(-100px) translateX(50px) scale(1.1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateY(-200px) translateX(-30px) scale(0.9);
+                opacity: 0.4;
+            }
+            75% {
+                transform: translateY(-100px) translateX(-50px) scale(1.05);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0.5;
+            }
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: var(--primary-green);
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        h2:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background-color: var(--light-green);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .slide-in-left.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(50px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .slide-in-right.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .zoom-in {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .zoom-in.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--primary-green);
+            color: var(--text-light);
+            padding: 0.5rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform: translateY(0);
+        }
+
+        header.hidden {
+            transform: translateY(-100%);
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            height: 50px;
+            width: auto;
+            transition: transform 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .logo:hover .logo-img {
+            transform: rotate(10deg);
+        }
+
+        .logo h1 {
+            color: var(--text-light);
+            font-size: 1.8rem;
+            margin-bottom: 0;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1.5rem;
+            position: relative;
+        }
+
+        nav ul li a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 5px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        nav ul li a:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--lighter-green);
+            transition: width 0.3s;
+        }
+
+        nav ul li a:hover:after,
+        nav ul li a.active:after {
+            width: 100%;
+        }
+
+        nav ul li a:hover {
+            color: var(--lighter-green);
+        }
+
+        nav ul li a .nav-icon {
+            margin-right: 5px;
+            font-size: 0.9rem;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .mobile-menu-btn:hover {
+            color: var(--lighter-green);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hero Section with Background Image */
+        .hero {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                        url('./hero.jpg') center/cover no-repeat;
+            color: var(--text-light);
+            padding: 8rem 0 6rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            margin-top: 0;
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.05)"/></svg>');
+            background-size: cover;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h2 {
+            color: var(--text-light);
+            font-size: 2.8rem;
+            margin-bottom: 1.5rem;
+            animation: pulse 2s infinite;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes pulse {
+            0% {
+                text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            }
+
+            50% {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            }
+
+            100% {
+                text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            }
+        }
+
+        .hero h2:after {
+            display: none;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin: 0 auto 2.5rem;
+            line-height: 1.8;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background-color: var(--light-green);
+            color: var(--text-light);
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: var(--transition);
+            margin-top: 1rem;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .cta-button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background-color: var(--lighter-green);
+            transition: left 0.4s;
+            z-index: -1;
+        }
+
+        .cta-button:hover:before {
+            left: 0;
+        }
+
+        .cta-button:hover {
+            border-color: var(--lighter-green);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .cta-button .btn-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+
+        .cta-button:hover .btn-icon {
+            transform: translateX(5px);
+        }
+
+        /* Floating Elements Animation */
+        .floating-element {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .float-1 {
+            width: 60px;
+            height: 60px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .float-2 {
+            width: 40px;
+            height: 40px;
+            top: 60%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+
+        .float-3 {
+            width: 30px;
+            height: 30px;
+            bottom: 30%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        /* Section Common Styles */
+        section {
+            padding: 5rem 0;
+            position: relative;
+        }
+
+        section:nth-child(even) {
+            background-color: var(--lightest-green);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .section-title h2 {
+            display: inline-block;
+            font-size: 2.2rem;
+        }
+
+        .section-title h2:after {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Product Info */
+        .product-info {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .product-image {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            max-height: 500px;
+            object-fit: cover;
+            transition: var(--transition);
+            display: block;
+        }
+
+        .product-image:hover img {
+            transform: scale(1.05);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--light-green);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            animation: badgePulse 2s infinite;
+            z-index: 2;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .product-details {
+            flex: 1;
+        }
+
+        .product-details h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-green);
+        }
+
+        .product-details p {
+            margin-bottom: 1.2rem;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        /* Ingredients */
+        .ingredients-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .ingredient-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-top: 4px solid transparent;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ingredient-card:hover {
+            transform: translateY(-15px) scale(1.03);
+            border-top-color: var(--light-green);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .ingredient-card i {
+            color: var(--light-green);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s;
+        }
+
+        .ingredient-card:hover i {
+            transform: scale(1.2);
+        }
+
+        /* Company Info */
+        .company-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .detail-card {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .detail-card i {
+            color: var(--light-green);
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Shelf Life */
+        .shelf-life-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            background-color: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shelf-life-content:hover {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .shelf-life-content i {
+            color: var(--light-green);
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Nutritional Info */
+        .nutritional-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 2rem;
+        }
+
+        .nutrition-item {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .nutrition-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .nutrition-item i {
+            color: var(--light-green);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* FAQ */
+        .faq-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background-color: white;
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-left-color: var(--light-green);
+        }
+
+        .faq-question {
+            padding: 1.8rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            background-color: var(--lightest-green);
+            transition: var(--transition);
+            font-size: 1.1rem;
+        }
+
+        .faq-question:hover {
+            background-color: #d4edda;
+        }
+
+        .faq-question i {
+            transition: transform 0.3s;
+        }
+
+        .faq-item.active .faq-question i {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 1.8rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), padding 0.5s;
+        }
+
+        .faq-item.active .faq-answer {
+            padding: 1.8rem;
+            max-height: 500px;
+        }
+
+        /* Contact */
+        .contact-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .contact-info {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .contact-info:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .contact-info i {
+            color: var(--light-green);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info h3 {
+            margin-bottom: 1.2rem;
+        }
+
+        /* Map Section */
+        .map-container {
+            margin-top: 3rem;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .map-container:hover {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        #map {
+            height: 450px;
+            width: 100%;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary-green);
+            color: var(--text-light);
+            padding: 4rem 0 2rem;
+            position: relative;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-logo h3 {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+        }
+
+        .footer-logo p {
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+
+        .footer-links h4,
+        .footer-social h4 {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links ul li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links ul li a {
+            color: var(--lighter-green);
+            text-decoration: none;
+            transition: var(--transition);
+            padding-left: 0;
+            display: inline-block;
+        }
+
+        .footer-links ul li a:hover {
+            color: var(--text-light);
+            padding-left: 10px;
+        }
+
+        .footer-social .social-icons {
+            display: flex;
+            gap: 1.2rem;
+        }
+
+        .footer-social .social-icons a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: var(--text-light);
+            font-size: 1.3rem;
+            transition: var(--transition);
+        }
+
+        .footer-social .social-icons a:hover {
+            background-color: var(--light-green);
+            transform: translateY(-5px) scale(1.1);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .hero h2 {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .product-info {
+                flex-direction: column;
+                gap: 3rem;
+            }
+
+            .hero {
+                padding: 7rem 0 5rem;
+                min-height: 500px;
+            }
+            
+            .hero h2 {
+                font-size: 2.3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            nav ul {
+                position: fixed;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                background-color: var(--primary-green);
+                flex-direction: column;
+                align-items: center;
+                padding: 1.5rem 0;
+                transform: translateY(-150%);
+                transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                box-shadow: var(--shadow);
+                z-index: 999;
+            }
+
+            nav ul.active {
+                transform: translateY(0);
+            }
+
+            nav ul li {
+                margin: 0.8rem 0;
+                width: 100%;
+                text-align: center;
+            }
+
+            nav ul li a {
+                display: block;
+                padding: 10px 20px;
+            }
+
+            .hero h2 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+            
+            .product-image img {
+                max-height: 400px;
+            }
+            
+            .hero {
+                min-height: 450px;
+                padding: 6rem 0 4rem;
+            }
+            
+            .cta-button {
+                padding: 0.8rem 2rem;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hero h2 {
+                font-size: 1.8rem;
+            }
+
+            section {
+                padding: 4rem 0;
+            }
+
+            .section-title h2 {
+                font-size: 1.8rem;
+            }
+
+            .container {
+                width: 95%;
+            }
+
+            .contact-container,
+            .company-details,
+            .ingredients-container {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 5rem 0 3rem;
+                min-height: 400px;
+            }
+
+            .floating-element {
+                display: none;
+            }
+            
+            .product-image img {
+                max-height: 350px;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .logo-img {
+                height: 40px;
+            }
+            
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+            
+            .product-badge {
+                top: 15px;
+                right: 15px;
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+        }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 55px;
+            height: 55px;
+            background-color: var(--primary-green);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: var(--transition);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 999;
+            border: 2px solid white;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .back-to-top:hover {
+            background-color: var(--secondary-green);
+            transform: translateY(-8px) scale(1.1);
+        }
+
+        /* Enhanced Loading Animation */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background-green);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-content {
+            text-align: center;
+            position: relative;
+        }
+
+        .soda-bottle {
+            width: 120px;
+            height: 200px;
+            position: relative;
+            margin: 0 auto 30px;
+            transform-style: preserve-3d;
+            animation: bottleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes bottleFloat {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg); 
+            }
+            25% { 
+                transform: translateY(-15px) rotate(2deg); 
+            }
+            75% { 
+                transform: translateY(-15px) rotate(-2deg); 
+            }
+        }
+
+        .bottle-body {
+            position: absolute;
+            width: 80px;
+            height: 150px;
+            background: linear-gradient(to right, #4CAF50, #2E7D32, #1B5E20);
+            border-radius: 30px 30px 10px 10px;
+            left: 20px;
+            top: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3),
+                        0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .bottle-neck {
+            position: absolute;
+            width: 30px;
+            height: 40px;
+            background: linear-gradient(to right, #81C784, #4CAF50);
+            border-radius: 5px 5px 0 0;
+            left: 45px;
+            top: 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .bottle-cap {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background: linear-gradient(to bottom, #FFD700, #FFC107);
+            border-radius: 5px;
+            left: 40px;
+            top: -15px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80%;
+            background: linear-gradient(to top, rgba(129, 199, 132, 0.8), rgba(76, 175, 80, 0.9));
+            border-radius: 20px 20px 10px 10px;
+            animation: liquidWave 4s ease-in-out infinite;
+        }
+
+        @keyframes liquidWave {
+            0%, 100% { 
+                transform: translateY(0) scaleY(1); 
+                border-radius: 20px 20px 10px 10px;
+            }
+            25% { 
+                transform: translateY(-10px) scaleY(1.05); 
+                border-radius: 25px 25px 15px 15px;
+            }
+            50% { 
+                transform: translateY(-20px) scaleY(0.95); 
+                border-radius: 18px 18px 8px 8px;
+            }
+            75% { 
+                transform: translateY(-10px) scaleY(1.02); 
+                border-radius: 22px 22px 12px 12px;
+            }
+        }
+
+        .bubble {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: bubbleRise 2s infinite;
+        }
+
+        @keyframes bubbleRise {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-150px) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        .loader-text {
+            color: var(--primary-green);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            animation: textPulse 2s infinite;
+        }
+
+        @keyframes textPulse {
+            0%, 100% { 
+                opacity: 0.8; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.05);
+            }
+        }
+
+        .loader-bubbles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Scroll Progress Indicator */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background-color: var(--light-green);
+            z-index: 1001;
+            transition: width 0.1s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        /* Fallback image styles */
+        .fallback-image {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            background-color: var(--lightest-green);
+            border-radius: 15px;
+        }
+        
+        .fallback-image i {
+            font-size: 4rem;
+            color: var(--light-green);
+        }
+        
+        .fallback-image span {
+            color: var(--primary-green);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        /* Section Bubbles */
+        .section-bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(129, 199, 132, 0.1) 0%, rgba(129, 199, 132, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            animation: sectionFloat 15s infinite linear;
+        }
+
+        @keyframes sectionFloat {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+            33% {
+                transform: translateY(-50px) translateX(30px);
+            }
+            66% {
+                transform: translateY(30px) translateX(-20px);
+            }
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+        }
+        
+        .bubble-1 {
+            width: 150px;
+            height: 150px;
+            top: 10%;
+            right: 5%;
+            animation-delay: 0s;
+        }
+        
+        .bubble-2 {
+            width: 100px;
+            height: 100px;
+            bottom: 20%;
+            left: 5%;
+            animation-delay: 5s;
+        }
+        
+        .bubble-3 {
+            width: 120px;
+            height: 120px;
+            top: 30%;
+            left: 10%;
+            animation-delay: 10s;
+        }
+        
+        .bubble-4 {
+            width: 80px;
+            height: 80px;
+            bottom: 30%;
+            right: 15%;
+            animation-delay: 7s;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated Background Bubbles -->
+    <div id="backgroundBubbles"></div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="soda-bottle">
+                <div class="bottle-body">
+                    <div class="liquid"></div>
+                </div>
+                <div class="bottle-neck"></div>
+                <div class="bottle-cap"></div>
+                <div class="loader-bubbles" id="loaderBubbles"></div>
+            </div>
+            <div class="loader-text">Pouring Perfection...</div>
+        </div>
+    </div>
+
+    <!-- Scroll Progress Indicator -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Header -->
+    <header id="mainHeader">
+        <div class="container header-container">
+            <a href="#home" class="logo">
+                <img src="logo1.png" alt="Parin Beverage Logo" class="logo-img" onerror="this.onerror=null; this.style.width='100px';">
+                <h1>Parin</h1>
+            </a>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <nav>
+                <ul id="navMenu">
+                    <li><a href="#home" class="active"><i class="fas fa-home nav-icon"></i> Home</a></li>
+                    <li><a href="#product"><i class="fas fa-wine-bottle nav-icon"></i> Product</a></li>
+                    <li><a href="#ingredients"><i class="fas fa-seedling nav-icon"></i> Ingredients</a></li>
+                    <li><a href="#company"><i class="fas fa-industry nav-icon"></i> Company</a></li>
+                    <li><a href="#shelf-life"><i class="fas fa-calendar-alt nav-icon"></i> Shelf Life</a></li>
+                    <li><a href="#contact"><i class="fas fa-envelope nav-icon"></i> Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="section-bubble bubble-1"></div>
+        <div class="section-bubble bubble-2"></div>
+        <div class="floating-element float-1"></div>
+        <div class="floating-element float-2"></div>
+        <div class="floating-element float-3"></div>
+        <div class="container fade-in hero-content">
+            <h2>Khari Soda by Parin </h2>
+            <p>A refreshing beverage made from rice flakes, sugar, cinnamon, and natural coconut oil. Enjoy the unique taste that combines tradition with quality ingredients.</p>
+            <a href="#product" class="cta-button">
+                Explore Our Product
+                <i class="fas fa-arrow-right btn-icon"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Product Information -->
+    <section id="product">
+        <div class="section-bubble bubble-3"></div>
+        <div class="section-bubble bubble-4"></div>
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Product Information</h2>
+            </div>
+            <div class="product-info">
+                <div class="product-image slide-in-left">
+                    <div class="product-badge">New & Improved</div>
+                    <img src="./soda2.jpeg" alt="Khari Soda Bottle" onerror="this.onerror=null; this.classList.add('fallback-image'); this.innerHTML='</i><span>Khari Soda Bottle</span>';">
+                </div>
+                <div class="product-details slide-in-right">
+                    <h3>Khari Soda</h3>
+                    <p>Khari Soda is a unique beverage that brings together traditional flavors with modern quality standards. Made from carefully selected ingredients, each bottle offers a refreshing experience.</p>
+                    <p>Our beverage is crafted using a proprietary process that preserves the natural flavors while ensuring consistency and quality in every batch.</p>
+                    <p>Perfect for any occasion, Khari Soda provides a delightful taste that appeals to all age groups.</p>
+                    <a href="#ingredients" class="cta-button" style="margin-top: 1.5rem;">
+                        View Ingredients
+                        <i class="fas fa-leaf btn-icon"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ingredients Section -->
+    <section id="ingredients">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Ingredients</h2>
+            </div>
+            <div class="ingredients-container">
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-seedling"></i>
+                    <h3>Rice Flakes</h3>
+                    <p>The primary base ingredient that gives Khari Soda its unique texture and flavor profile.</p>
+                </div>
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-cube"></i>
+                    <h3>Sugar</h3>
+                    <p>Adds the perfect level of sweetness to balance the beverage's flavor.</p>
+                </div>
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-leaf"></i>
+                    <h3>Cinnamon</h3>
+                    <p>Provides a warm, aromatic spice note that enhances the overall taste experience.</p>
+                </div>
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-lemon"></i>
+                    <h3>Citric Acid</h3>
+                    <p>Adds a tangy freshness and acts as a natural preservative.</p>
+                </div>
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Preservatives</h3>
+                    <p>Ensure product safety and extend shelf life while maintaining quality.</p>
+                </div>
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-oil-can"></i>
+                    <h3>Natural Coconut Oil</h3>
+                    <p>Adds a subtle tropical note and smooth mouthfeel to the beverage.</p>
+                </div>
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-flask"></i>
+                    <h3>Sodium Benzoate</h3>
+                    <p>A food preservative that prevents the growth of microorganisms.</p>
+                </div>
+                <div class="ingredient-card fade-in">
+                    <i class="fas fa-prescription-bottle"></i>
+                    <h3>BHT (BHA)</h3>
+                    <p>Antioxidants that prevent oxidative deterioration of the beverage.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Company Information -->
+    <section id="company">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Company Information</h2>
+            </div>
+            <div class="company-details">
+                <div class="detail-card zoom-in">
+                    <i class="fas fa-industry"></i>
+                    <h3>Manufacturer</h3>
+                    <p>Jay Ramnath Balaji Park</p>
+                    <p>Plot No. 19, At: Tramba, Kasubaghar</p>
+                    <p>Rajkot - 360020 (Gulbarga)</p>
+                </div>
+                <div class="detail-card zoom-in">
+                    <i class="fas fa-star"></i>
+                    <h3>Quality Assurance</h3>
+                    <p>We follow strict quality control measures at every stage of production to ensure that each bottle of Khari Soda meets our high standards for taste and safety.</p>
+                </div>
+                <div class="detail-card zoom-in">
+                    <i class="fas fa-award"></i>
+                    <h3>Our Commitment</h3>
+                    <p>We are committed to producing beverages that not only taste great but are also made with responsibly sourced ingredients and sustainable practices.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shelf Life Section -->
+    <section id="shelf-life">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Shelf Life Information</h2>
+            </div>
+            <div class="shelf-life-content fade-in">
+                <i class="fas fa-calendar-check"></i>
+                <h3>Best Before Three Months From Manufacture</h3>
+                <p>To ensure optimal taste and quality, we recommend consuming Khari Soda within three months from the date of manufacture. The manufacturing date is clearly printed on each bottle.</p>
+                <p>For best results, store in a cool, dry place away from direct sunlight. Once opened, refrigerate and consume within 2-3 days.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Nutritional Information -->
+    <section id="nutrition">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Nutritional Information</h2>
+            </div>
+            <div class="nutritional-grid">
+                <div class="nutrition-item fade-in">
+                    <i class="fas fa-fire"></i>
+                    <h3>Energy</h3>
+                    <p>Approximately 45 kcal per 100ml serving</p>
+                </div>
+                <div class="nutrition-item fade-in">
+                    <i class="fas fa-weight"></i>
+                    <h3>Sugar Content</h3>
+                    <p>Moderate level from natural and added sugars</p>
+                </div>
+                <div class="nutrition-item fade-in">
+                    <i class="fas fa-prescription-bottle"></i>
+                    <h3>Additives</h3>
+                    <p>All additives are within FSSAI prescribed limits</p>
+                </div>
+                <div class="nutrition-item fade-in">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Quality</h3>
+                    <p>No artificial colors or flavors</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Manufacturing Process -->
+    <section id="process">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Manufacturing Process</h2>
+            </div>
+            <div class="company-details">
+                <div class="detail-card slide-in-left">
+                    <i class="fas fa-filter"></i>
+                    <h3>Ingredient Preparation</h3>
+                    <p>Rice flakes are carefully cleaned and processed. All ingredients are measured with precision to maintain consistent quality.</p>
+                </div>
+                <div class="detail-card zoom-in">
+                    <i class="fas fa-blender"></i>
+                    <h3>Mixing & Blending</h3>
+                    <p>Ingredients are mixed in controlled conditions to achieve the perfect balance of flavors that defines Khari Soda.</p>
+                </div>
+                <div class="detail-card slide-in-right">
+                    <i class="fas fa-tint"></i>
+                    <h3>Carbonation</h3>
+                    <p>The beverage undergoes a precise carbonation process to achieve its signature refreshing fizz.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Packaging Information -->
+    <section id="packaging">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Packaging Information</h2>
+            </div>
+            <div class="shelf-life-content fade-in">
+                <i class="fas fa-box-open"></i>
+                <h3>Quality Packaging</h3>
+                <p>Khari Soda is packaged in high-quality, food-grade bottles that preserve freshness and prevent contamination. Each bottle is carefully sealed to maintain carbonation and flavor integrity.</p>
+                <p>Our packaging is designed to be both attractive and functional, with clear labeling that includes all necessary product information for consumer awareness.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Frequently Asked Questions</h2>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>What is Khari Soda made of?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Khari Soda is made from rice flakes, sugar, cinnamon, citric acid, preservatives, natural coconut oil, sodium benzoate, BHT (BHA), and other additives. All ingredients are food-grade and approved for consumption.</p>
+                    </div>
+                </div>
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>How long does Khari Soda last?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Khari Soda has a shelf life of three months from the date of manufacture. The "Best Before" date is clearly printed on each bottle. Once opened, we recommend refrigerating and consuming within 2-3 days.</p>
+                    </div>
+                </div>
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>Where is Khari Soda manufactured?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Khari Soda is manufactured by Jay Ramnath Balaji Park at Plot No. 19, At: Tramba, Kasubaghar, Rajkot - 360020 (Gulbarga).</p>
+                    </div>
+                </div>
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>Is Khari Soda suitable for vegetarians?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes, Khari Soda contains no animal-derived ingredients and is suitable for vegetarians.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Contact Information</h2>
+            </div>
+            <div class="contact-container">
+                <div class="contact-info fade-in">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Manufacturing Address</h3>
+                    <p>Jay Ramnath Balaji Park</p>
+                    <p>Plot No. 19, At: Tramba, Kasubaghar</p>
+                    <p>Rajkot - 360020 (Gulbarga)</p>
+                </div>
+                <div class="contact-info fade-in">
+                    <i class="fas fa-phone"></i>
+                    <h3>Contact Details</h3>
+                    <p>For product inquiries and wholesale orders:</p>
+                    <p>Email: info@parinbeverage.com</p>
+                    <p>Phone: +91 98765 43210</p>
+                </div>
+                <div class="contact-info fade-in">
+                    <i class="fas fa-clock"></i>
+                    <h3>Business Hours</h3>
+                    <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
+                    <p>Saturday: 10:00 AM - 4:00 PM</p>
+                    <p>Sunday: Closed</p>
+                </div>
+            </div>
+
+            <!-- Map Section -->
+            <div class="map-container fade-in">
+                <div id="map"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h3>Parin</h3>
+                    <p>Manufacturers of premium quality beverages since 2010. Committed to quality, taste, and customer satisfaction.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#product">Product</a></li>
+                        <li><a href="#ingredients">Ingredients</a></li>
+                        <li><a href="#company">Company</a></li>
+                        <li><a href="#shelf-life">Shelf Life</a></li>
+                    </ul>
+                </div>
+                <div class="footer-social">
+                    <h4>Follow Us</h4>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2023 Parin Beverage. All rights reserved. | Khari Soda is a registered trademark.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <a href="#home" class="back-to-top" id="backToTop">
+        <i class="fas fa-chevron-up"></i>
+    </a>
+
+    <!-- Leaflet JS for Map -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Create animated background bubbles
+        function createBackgroundBubbles() {
+            const bubbleContainer = document.getElementById('backgroundBubbles');
+            const bubbleCount = 15;
+            
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                
+                // Random size between 20px and 100px
+                const size = Math.random() * 80 + 20;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                
+                // Random position
+                bubble.style.left = `${Math.random() * 100}%`;
+                bubble.style.top = `${Math.random() * 100}%`;
+                
+                // Random animation delay and duration
+                const delay = Math.random() * 20;
+                const duration = 15 + Math.random() * 20;
+                bubble.style.animationDelay = `${delay}s`;
+                bubble.style.animationDuration = `${duration}s`;
+                
+                bubbleContainer.appendChild(bubble);
+            }
+        }
+
+        // Create bubbles in loader
+        function createLoaderBubbles() {
+            const bubbleContainer = document.getElementById('loaderBubbles');
+            const bubbleCount = 20;
+            
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                
+                // Random size between 5px and 15px
+                const size = Math.random() * 10 + 5;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                
+                // Random position within bottle
+                const left = Math.random() * 70 + 15;
+                const top = Math.random() * 100 + 50;
+                bubble.style.left = `${left}%`;
+                bubble.style.top = `${top}%`;
+                
+                // Random animation delay and duration
+                const delay = Math.random() * 2;
+                const duration = 1 + Math.random() * 2;
+                bubble.style.animationDelay = `${delay}s`;
+                bubble.style.animationDuration = `${duration}s`;
+                
+                bubbleContainer.appendChild(bubble);
+            }
+        }
+
+        // Initialize loader with enhanced bottle animation
+        window.addEventListener('load', function () {
+            createBackgroundBubbles();
+            createLoaderBubbles();
+            
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 2000);
+        });
+
+        // Variables for navbar hide/show functionality
+        let lastScrollTop = 0;
+        const header = document.getElementById('mainHeader');
+        const scrollProgress = document.getElementById('scrollProgress');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const navMenu = document.getElementById('navMenu');
+
+        // Navbar hide/show on scroll
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Scroll progress indicator
+            const winHeight = window.innerHeight;
+            const docHeight = document.documentElement.scrollHeight;
+            const scrollPercent = (scrollTop / (docHeight - winHeight)) * 100;
+            scrollProgress.style.width = scrollPercent + '%';
+            
+            // Show/hide back to top button
+            const backToTop = document.getElementById('backToTop');
+            if (scrollTop > 300) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+            
+            // Navbar hide/show logic
+            if (scrollTop > lastScrollTop && scrollTop > 100) {
+                // Scrolling down - hide navbar
+                header.classList.add('hidden');
+            } else {
+                // Scrolling up - show navbar
+                header.classList.remove('hidden');
+            }
+            
+            // Update active nav link based on scroll position
+            let current = '';
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('nav ul li a');
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (scrollTop >= (sectionTop - 150)) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+            
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        });
+
+        // Mobile menu toggle
+        mobileMenuBtn.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            const icon = mobileMenuBtn.querySelector('i');
+            if (navMenu.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+        
+        // Close mobile menu when clicking on a link
+        const navLinks = document.querySelectorAll('nav ul li a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                const icon = mobileMenuBtn.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            });
+        });
+
+        // FAQ accordion functionality
+        const faqQuestions = document.querySelectorAll('.faq-question');
+        faqQuestions.forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                const isActive = item.classList.contains('active');
+                
+                // Close all FAQ items first
+                faqQuestions.forEach(otherQuestion => {
+                    otherQuestion.parentElement.classList.remove('active');
+                });
+                
+                // Open clicked item if it wasn't already active
+                if (!isActive) {
+                    item.classList.add('active');
+                }
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        // Observe elements with animation classes
+        document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .zoom-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Initialize Map
+        function initMap() {
+            // Coordinates for Rajkot, Gujarat (approximate location)
+            const rajkotCoords = [22.3039, 70.8022];
+            
+            // Create map
+            const map = L.map('map').setView(rajkotCoords, 14);
+            
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+            
+            // Custom green icon for marker
+            const greenIcon = L.icon({
+                iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+                        <circle cx="16" cy="16" r="14" fill="#4CAF50" stroke="white" stroke-width="2"/>
+                        <path d="M16 8L20 16L16 24L12 16Z" fill="white"/>
+                    </svg>`),
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+            
+            // Add marker
+            const marker = L.marker(rajkotCoords, {icon: greenIcon}).addTo(map);
+            marker.bindPopup(`
+                <div style="text-align:center;">
+                    <h3 style="margin:0;color:#1a5d1a;">Parin Beverage</h3>
+                    <p style="margin:5px 0;"><strong>Manufacturing Unit</strong></p>
+                    <p style="margin:5px 0;">Plot No. 19, At: Tramba, Kasubaghar</p>
+                    <p style="margin:5px 0;">Rajkot - 360020 (Gulbarga)</p>
+                    <p style="margin:10px 0 0 0;">
+                        <i class="fas fa-phone" style="margin-right:5px;"></i>
+                        +91 98765 43210
+                    </p>
+                </div>
+            `).openPopup();
+            
+            // Add circle to indicate area
+            L.circle(rajkotCoords, {
+                color: '#1a5d1a',
+                fillColor: '#4caf50',
+                fillOpacity: 0.2,
+                radius: 400
+            }).addTo(map);
+        }
+
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', initMap);
+
+        // Add hover effect to all interactive elements
+        document.querySelectorAll('.ingredient-card, .detail-card, .contact-info, .nutrition-item').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = this.style.transform.replace('scale(1.02)', 'scale(1.05)');
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = this.style.transform.replace('scale(1.05)', 'scale(1.02)');
+            });
+        });
+        
+        // Preload hero background image with fallback
+        const heroBg = new Image();
+        heroBg.src = './hero.jpg';
+        heroBg.onerror = function() {
+            // If hero background image doesn't load, use fallback gradient
+            document.querySelector('.hero').style.background = 'linear-gradient(to right, var(--primary-green), var(--secondary-green))';
+        };
+        
+        // Animate section bubbles
+        function animateSectionBubbles() {
+            const bubbles = document.querySelectorAll('.section-bubble');
+            bubbles.forEach((bubble, index) => {
+                bubble.style.animationDelay = `${index * 3}s`;
+            });
+        }
+        
+        animateSectionBubbles();
+    </script>
+</body>
+</html>
