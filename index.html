@@ -598,21 +598,22 @@
             text-align: center;
         }
 
-        /* slider section – FASTER, 15s duration (updated as requested) + never pauses */
+        /* ===== PERFECTLY CONTINUOUS SLIDER (NO GAPS) ===== */
         .slider-section {
             background: #f0f7f0;
             padding: 2.5rem 0;
             overflow: hidden;
-            white-space: nowrap;
             width: 100%;
         }
 
         .slider-track {
-            display: inline-block;
-            animation: scrollSlides 15s linear infinite; /* was 45s, now 15s for faster scroll */
+            display: flex;
+            width: max-content;
+            animation: scrollContinuous 22s linear infinite;
+            gap: 0; /* no gap between images – but we want spacing? use margin on images for visual spacing, but for continuity we need exact duplicate placement. 
+                       We'll keep margin on images for design, but the duplicate set ensures continuity. */
         }
-
-        /* pause on hover removed – slider never stops */
+        /* never pauses */
         .slider-section:hover .slider-track {
             animation-play-state: running;
         }
@@ -622,23 +623,28 @@
             height: 200px;
             object-fit: cover;
             border-radius: 20px;
-            margin: 0 1rem;
+            margin: 0 1rem;       /* visual space between images */
             box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.2);
             border: 2px solid #81c784;
             transition: transform 0.3s;
+            flex-shrink: 0;
         }
 
         .slider-track img:hover {
             transform: scale(1.02) rotate(1deg);
         }
 
-        @keyframes scrollSlides {
+        /* animation moves exactly half the total width of the duplicated set.
+           total width for 10 images (5 original + 5 clones): each image = 200px + left+right margin (1rem each = 16px*2 = 32px) = 232px per image.
+           10 images * 232px = 2320px. Half = 1160px.
+           We move by -1160px to seamlessly reset.
+        */
+        @keyframes scrollContinuous {
             0% {
                 transform: translateX(0);
             }
-
             100% {
-                transform: translateX(-50%);
+                transform: translateX(calc(-2320px / 2));  /* -1160px */
             }
         }
 
@@ -850,7 +856,7 @@
             border-left: 4px solid #81c784;
             padding: 1.5rem;
             border-radius: 15px;
-            transition: 20s;
+            transition: 0.3s;
             color: white;
         }
 
@@ -1485,9 +1491,16 @@
         </div>
     </section>
 
-    <!-- Image Slider – FASTER 15s (updated as requested) + NO PAUSE ON HOVER -->
+    <!-- Image Slider – ABSOLUTELY CONTINUOUS, NO VISIBLE GAP, IMAGES FLOW ENDLESSLY -->
     <div class="slider-section reveal">
         <div class="slider-track">
+            <!-- original set of 5 images -->
+            <img src="./images/creat.jpg" alt="drink">
+            <img src="./images/img5.png" alt="soda">
+            <img src="./images/food.jpg" alt="refreshment">
+            <img src="./images/foodwithsoda.jpg" alt="beverage">
+            <img src="./images/img4.png" alt="ingredients">
+            <!-- duplicated set – exactly the same order, creating seamless loop -->
             <img src="./images/creat.jpg" alt="drink">
             <img src="./images/img5.png" alt="soda">
             <img src="./images/food.jpg" alt="refreshment">
