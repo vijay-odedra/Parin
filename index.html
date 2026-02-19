@@ -598,7 +598,7 @@
             text-align: center;
         }
 
-        /* slider section – CONTINUOUS, SLOWED (45s) + NEVER PAUSES (hover effect removed) */
+        /* slider section – FASTER, 15s duration (updated as requested) + never pauses */
         .slider-section {
             background: #f0f7f0;
             padding: 2.5rem 0;
@@ -609,7 +609,7 @@
 
         .slider-track {
             display: inline-block;
-            animation: scrollSlides 45s linear infinite;
+            animation: scrollSlides 15s linear infinite; /* was 45s, now 15s for faster scroll */
         }
 
         /* pause on hover removed – slider never stops */
@@ -1485,7 +1485,7 @@
         </div>
     </section>
 
-    <!-- Image Slider – CONTINUOUS, SLOWED (45s) + NO PAUSE ON HOVER -->
+    <!-- Image Slider – FASTER 15s (updated as requested) + NO PAUSE ON HOVER -->
     <div class="slider-section reveal">
         <div class="slider-track">
             <img src="./images/creat.jpg" alt="drink">
